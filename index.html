@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="swiper.min.css">
+</head>
+<body>
+<div class="swiper-container">
+    <div class="swiper-wrapper">
+        <div class="swiper-slide">Slide 1</div>
+        <div class="swiper-slide">Slide 2</div>
+        <div class="swiper-slide">Slide 3</div>
+    </div>
+    <!-- 如果需要分页器 -->
+    <div class="swiper-pagination"></div>
+
+    <!-- 如果需要导航按钮 -->
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
+
+    <!-- 如果需要滚动条 -->
+    <!--<div class="swiper-scrollbar"></div>-->
+</div>
+<div class="type">
+    <div class="project active">未完成</div>
+    <div class="done">已完成</div>
+</div>
+<div class="content">
+    <ul class="itemlist">
+        <!--<li>-->
+        <!--<p>这里记录的是要做的事情</p>-->
+        <!--<time>2018/03/27 16:00:00</time>-->
+        <!--<span>★</span>-->
+        <!--</li>-->
+
+    </ul>
+</div>
+<div class="add">新增</div>
+<div class="mask">
+    <div class="inputarea">
+        <textarea id="text"></textarea>
+        <div class="submit">提交</div>
+        <div class="update">修改</div>
+        <div class="cancel">x</div>
+    </div>
+</div>
+
+<script src="swiper.min.js"></script>
+<script src="jquery-3.3.1.min.js"></script>
+<script src="jquery.transit.js"></script>
+<script src="iscroll.js"></script>
+<script src="hammer.js"></script>
+<script>
+    var swiper = new Swiper('.swiper-container', {
+        pagination: {
+            el: '.swiper-pagination',
+        },
+    });
+
+    // var swiper = new Swiper('.swiper-container', {
+    //     navigation: {
+    //         nextEl: '.swiper-button-next',
+    //         prevEl: '.swiper-button-prev',
+    //     },
+    // });
+    var swiper = new Swiper('.swiper-container');
+
+    var mySwiper = new Swiper('.swiper-container', {
+        direction: 'horizontal',
+        loop: true,
+        // slidesPerView : 2,
+        // 如果需要分页器
+        pagination: {
+            el: '.swiper-pagination',
+        },
+
+        // 如果需要前进后退按钮
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+
+        // 如果需要滚动条
+        // scrollbar: {
+        //     el: '.swiper-scrollbar',
+        // },
+    })
+
+
+
+</script>
+<script>
+    var iscroll = new IScroll(".content", {
+        mouseWheel: true, //鼠标滚轮滚动
+        scrollbars: true,//滚动条,
+        shrinkScrollbars: "scale",
+        click:true
+    });
+    var state = "project";
+    $(".add").click(function () {
+        $(".mask").show();
+        $(".inputarea").transition({y: 0}, 500);
+        $(".submit").show();
+        $(".update").hide();
+    })
+    $(".cancel").click(function () {
+        $(".inputarea").transition({y: "-62vh"}, 500, function () {
+            $(".mask").hide();
+        })
+    })
+    $(".submit").click(function () {
+        var val = $("#text").val();
+        if (val === "") {
+            return;
+        }
+        $("#text").val("");
+        var data = getData();
+        var time = new Date().getTime();//获取毫秒数
+
+        data.push({content: val, time, star: false, done: false});
+        saveData(data);
+        $(".inputarea").transition({y: "-62vh"}, 500, function () {
+            $(".mask").hide();
+        })
+        render();
+    })
+    $(".project").click(function () {
+        $(this).addClass("active").siblings().removeClass("active");//sibling 兄弟元素
+        state = "project";
+        render();
+    })
+    $(".done").click(function () {
+        $(this).addClass("active").siblings().removeClass("active");
+        state = "done";
+        render();
+    })
+    $(".update").click(function () {
+        var val = $("#text").val();
+        if (val === "") {
+            return;
+        }
+        $("#text").val("");
+        var data = getData();
+        var index=$(this).data("index");
+        data[index].content=val;
+        //var time = new Date().getTime();//获取毫秒数
+
+        //data.push({content: val, time, star: false, done: false});
+
+        saveData(data);
+        render();
+        $(".inputarea").transition({y: "-62vh"}, 500, function () {
+            $(".mask").hide();
+        })
+    })
+
+    function getData() {
+        return localStorage.todo ? JSON.parse(localStorage.todo) : [];
+    }
+
+    function saveData(data) {
+        localStorage.todo = JSON.stringify(data);
+    }
+
+    function render() {
+        var data = getData();
+        var str = "";
+        data.forEach(function (val, index) {
+            if (state === "project" && val.done === false) {
+                str += "<li id=" + index + "><p>" + val.content + "</p><time>" + parseTime(val.time) + "</time><span class="+(val.star?"active1":"")+">★</span><div class='changestate'>完成</div></li>"
+            } else if (state === "done" && val.done === true) {
+                str += "<li id=" + index + "><p>" + val.content + "</p><time>" + parseTime(val.time) + "</time><span class="+(val.star?"active1":"")+">★</span><div class='del'>删除</div></li>"
+            }
+
+        });
+        $(".itemlist").html(str);
+        iscroll.refresh();
+        addTouchEvent();
+    }
+
+    render();
+
+    $(".itemlist")
+        .on("click", ".changestate", function () {
+            var index = $(this).parent().attr("id");
+            console.log(index);
+            var data = getData();
+            data[index].done = true;
+            saveData(data);
+            render();
+        })
+        .on("click", ".del", function () {
+            var index = $(this).parent().attr("id");
+            var data = getData();
+            data.splice(index, 1);
+            saveData(data);
+            render();
+        })
+        .on("click","span",function () {
+            var index=$(this).parent().attr("id");
+            var data=getData();
+            data[index].star=!data[index].star;
+            saveData(data);
+            render();
+        })
+        .on("click","p",function () {
+            var index=$(this).parent().attr("id");
+            var data=getData();
+            $(".mask").show();
+            $(".inputarea").transition({y:0},500);
+            $("#text").val(data[index].content)
+            $(".submit").hide();
+            $(".update").show().data("index",index);
+
+        })
+
+    function parseTime(time) {
+        var date = new Date();
+        date.setTime(time);
+        var year = date.getFullYear();
+        var month = setZero(date.getMonth() + 1);
+        var day = setZero(date.getDate());
+        var hour = setZero(date.getHours());
+        var min = setZero(date.getMinutes());
+        var sec = setZero(date.getSeconds());
+        return year + "/" + month + "/" + day + "<br>" + hour + "/" + min + "/" + sec;
+    }
+
+    function setZero(n) {
+        return n < 10 ? "0" + n : n;
+    }
+
+    function addTouchEvent() {
+        $(".itemlist>li").each(function (index, ele) {
+            var hammerobj = new Hammer(ele);
+            let sx, moveX;
+            let max = window.innerWidth / 5;
+            let state = "start";
+            let flag = true;//手指离开之后要不要有动画
+            hammerobj.on("panstart", function (e) {
+                ele.style.transition = "";
+                sx = e.center.x;
+                // console.log(sx);
+            })
+            hammerobj.on("panmove", function (e) {
+                let cx = e.center.x;
+                moveX = cx - sx;
+                // console.log(moveX)
+                if (moveX > 0 && state === "start") {
+                    flag = false;
+                    return;
+                }//在开始状态是不能往右走
+                if (moveX < 0 && state === "end") {
+                    flag = false;
+                    return;
+                }//在结束状态不能往左走
+                if (Math.abs(moveX) > max) {
+                    flag = false;
+                    state = state === "start" ? "end" : "start";
+                    if (state === "end") {
+                        $(ele).css("x", -max);
+                    } else {
+                        $(ele).css("x", 0);
+                    }
+                    return;
+                }
+                if (state === "end") {
+                    moveX = -max + cx - sx;
+                }
+                flag = true;
+                $(ele).css("x", moveX);
+                // ele.style.transform=`translateX(${moveX}px)`;
+            })
+            hammerobj.on("panend", function () {
+                if (!flag) {
+                    return
+                }
+                ;
+                // ele.style.transition="all.5s";
+                if (Math.abs(moveX) > (max / 2)) {
+                    // ele.style.transform=`translateX(${-max}px)`;
+                    $(ele).transition({x: -max});
+                    state = "end";
+                } else {
+                    // ele.style.transform="translateX(0px)";
+                    $(ele).transition({x: 0});
+                    state = "start";
+                }
+            })
+        })
+    }
+
+    render();
+
+</script>
+</body>
+</body>
+</html>
